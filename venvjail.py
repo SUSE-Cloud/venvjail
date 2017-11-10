@@ -42,8 +42,8 @@ EXCLUDE_RPM = r"""# List of packages to ignore (use Python regex)
 .*-test
 
 # Python base breaks the venv
-pyhon-base
-pyhon3-base
+python-base
+python3-base
 
 # Exclude all Python 3 packages
 python3.*
