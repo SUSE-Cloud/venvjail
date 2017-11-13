@@ -33,12 +33,14 @@ EXCLUDE_RPM = r"""# List of packages to ignore (use Python regex)
 # package match both constrains, it will be excluded.
 
 # Exclude irrelevan sub-packages
-.*-debuginfo
-.*-debugsource
-.*-devel
+.*-debuginfo$
+.*-debugsource$
+.*-devel$
 .*-devel-.*
-.*-doc
-.*-docs
+# Exclude docs packages (but do not exclude docker)
+.*-doc$
+.*-docs$
+.*-doc-.*
 .*-test
 
 # Python base breaks the venv
@@ -357,7 +359,8 @@ def requires(args):
     requires = set(requires) - set(in_venv)
 
     for rpm in sorted(requires):
-        print(rpm, requires_and_version[rpm].strip())
+        requires = '%s %s' % (rpm, requires_and_version[rpm].strip())
+        print(requires.strip())
 
 
 if __name__ == '__main__':
