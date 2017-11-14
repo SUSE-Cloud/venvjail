@@ -51,6 +51,18 @@ python3-base
 python3.*
 """
 
+LICENSE = """# Copyright (c) 2017 SUSE LINUX GmbH, Nuernberg, Germany.
+#
+# All modifications and additions to the file contributed by third parties
+# remain the property of their copyright owners, unless otherwise agreed
+# upon. The license for this file, and modifications and additions to the
+# file, is the same license as for the pristine package itself (unless the
+# license for the pristine package is not an Open Source License, in which
+# case the license is the MIT License). An "Open Source License" is a
+# license that conforms to the Open Source Definition (Version 1.9)
+# published by the Open Source Initiative.
+"""
+
 
 class FileList():
     """File list with comments and regular expressions."""
@@ -202,6 +214,78 @@ def _fix_systemd_services(dest_dir, virtual_env):
                   os.path.basename(service)))
 
 
+def _os_release():
+    """Recover release information."""
+    output = subprocess.check_output('lsb_release -a', shell=True)
+    output = output.decode('utf-8')
+    return {
+        'distributor_id':
+        re.findall(r'Distributor ID:\s+(.*)$',
+                   output, re.MULTILINE)[0],
+        'description':
+        re.findall(r'Description:\s+(.*)$',
+                   output, re.MULTILINE)[0],
+        'release':
+        re.findall(r'Release:\s+(.*)$',
+                   output, re.MULTILINE)[0],
+        'codename':
+        re.findall(r'Codename:\s+(.*)$',
+                   output, re.MULTILINE)[0],
+        'deployer_version': 'ardana-0.9.0',
+        'pip_mirror': 'OBS',
+    }
+
+
+def _pip_freeze(dest_dir):
+    """Return the output from `pip freeze`."""
+    output = subprocess.check_output(
+        'cd %s; source bin/activate; pip freeze' % dest_dir,
+        shell=True)
+    output = output.decode('utf-8')
+    return output.split('\n')
+
+
+def add_meta_inf(dest_dir, version):
+    """Add META_INF directory content."""
+    meta_inf = os.path.join(dest_dir, 'META_INF')
+    os.mkdir(meta_inf)
+
+    service, timestamp = os.path.basename(dest_dir).rsplit('-', 1)
+
+    # Add version YAML file
+    version_yml = os.path.join(meta_inf, 'version.yml')
+    with open(version_yml, 'w+') as f:
+        print(LICENSE, file=f)
+        print(file=f)
+        print('# Version for: %s' % service, file=f)
+        print('---', file=f)
+        print(file=f)
+        print('file_format: 1', file=f)
+        print('version: %s' % version, file=f)
+        print('timestamp: %s' % timestamp, file=f)
+
+    release = _os_release()
+    pip_freeze = _pip_freeze(dest_dir)
+
+    # Add manifest YAML file
+    manifest_yml = os.path.join(meta_inf, 'manifest.yml')
+    with open(manifest_yml, 'w+') as f:
+        print('# Manifest for: %s' % service, file=f)
+        print('---', file=f)
+        print(file=f)
+
+        print('# Ardana environment', file=f)
+        print('environment:', file=f)
+        for key, value in release.items():
+            print('  %s: %s' % (key, value), file=f)
+        print(file=f)
+
+        print('# Pip freeze output', file=f)
+        print('pip: |', file=f)
+        for line in pip_freeze:
+            print('  %s' % line, file=f)
+
+
 def create(args):
     """Function called for the `create` command."""
     # Create the virtual environment
@@ -244,6 +328,8 @@ def create(args):
             '--extract-over-symlinks' % (args.dest_dir, package),
             stdout=subprocess.DEVNULL,
             shell=True)
+
+    add_meta_inf(args.dest_dir, args.version)
 
     _fix_virtualenv(args.dest_dir, args.relocate)
 
@@ -387,6 +473,9 @@ if __name__ == '__main__':
     subparser.add_argument('-x', '--exclude',
                            default='exclude-rpm',
                            help='File with packages to exclude')
+    subparser.add_argument('-v', '--version',
+                           default='0.1.0',
+                           help='Package version')
     subparser.set_defaults(func=create)
 
     # Parser for `include` command
