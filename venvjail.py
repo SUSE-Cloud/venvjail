@@ -462,7 +462,7 @@ if __name__ == '__main__':
                            action='store_false',
                            help='Allows access to the global site-packages')
     subparser.add_argument('-l', '--relocate',
-                           default='/opt/ardana/venvs',
+                           default='/opt/stack/venv',
                            help='Relocated virtual environment directory')
     subparser.add_argument('-r', '--repo',
                            default='/.build.binaries',
