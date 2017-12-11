@@ -343,6 +343,19 @@ def create(args):
         for rpm in sorted(excluded):
             print(rpm, file=f)
 
+    # Write the L3/Maintenance track file, required to track the
+    # content of the venv inside OBS.
+    query = '|'.join(('%{NAME}', '%{EPOCH}', '%{VERSION}',
+                      '%{RELEASE}', '%{ARCH}', '%{DISTURL}'))
+    with open(args.track, 'w') as f:
+        for rpm in sorted(included):
+            rpm = os.path.join(args.repo, rpm)
+            output = subprocess.check_output(
+                "rpm -qp --queryformat='%s' %s" % (query, rpm),
+                stderr=subprocess.DEVNULL,
+                shell=True)
+            print(output.decode('utf-8'), file=f)
+
 
 def _filter_binary_xml(root):
     """Filter a XML tree of binary elements"""
@@ -473,6 +486,8 @@ if __name__ == '__main__':
     subparser.add_argument('-x', '--exclude',
                            default='exclude-rpm',
                            help='File with packages to exclude')
+    subparser.add_argument('-t', '--track',
+                           help='Filename for the L3/Maintenance track file')
     subparser.add_argument('-v', '--version',
                            default='0.1.0',
                            help='Package version')
