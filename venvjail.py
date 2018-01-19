@@ -49,6 +49,9 @@ python3-base
 
 # Exclude all Python 3 packages
 python3.*
+
+# Exclude rpmlint related packages
+rpmlint.*
 """
 
 LICENSE = """# Copyright (c) 2017 SUSE LINUX GmbH, Nuernberg, Germany.
