@@ -217,7 +217,7 @@ def _fix_systemd_services(dest_dir, virtual_env):
                   os.path.basename(service)))
 
 
-def _os_release():
+def _os_release(ardana_version):
     """Recover release information."""
     output = subprocess.check_output('lsb_release -a', shell=True)
     output = output.decode('utf-8')
@@ -234,7 +234,7 @@ def _os_release():
         'codename':
         re.findall(r'Codename:\s+(.*)$',
                    output, re.MULTILINE)[0],
-        'deployer_version': 'ardana-0.9.0',
+        'deployer_version': 'ardana-%s' % ardana_version,
         'pip_mirror': 'OBS',
     }
 
@@ -248,7 +248,7 @@ def _pip_freeze(dest_dir):
     return output.split('\n')
 
 
-def add_meta_inf(dest_dir, version):
+def add_meta_inf(dest_dir, version, ardana_version):
     """Add META_INF directory content."""
     meta_inf = os.path.join(dest_dir, 'META_INF')
     os.mkdir(meta_inf)
@@ -267,7 +267,7 @@ def add_meta_inf(dest_dir, version):
         print('version: %s' % version, file=f)
         print('timestamp: %s' % timestamp, file=f)
 
-    release = _os_release()
+    release = _os_release(ardana_version)
     pip_freeze = _pip_freeze(dest_dir)
 
     # Add manifest YAML file
@@ -332,7 +332,7 @@ def create(args):
             stdout=subprocess.DEVNULL,
             shell=True)
 
-    add_meta_inf(args.dest_dir, args.version)
+    add_meta_inf(args.dest_dir, args.version, args.ardana_version)
 
     _fix_virtualenv(args.dest_dir, args.relocate)
 
@@ -494,6 +494,9 @@ if __name__ == '__main__':
     subparser.add_argument('-v', '--version',
                            default='0.1.0',
                            help='Package version')
+    subparser.add_argument('-a', '--ardana-version',
+                           default='0.9.0',
+                           help='Ardana version')
     subparser.set_defaults(func=create)
 
     # Parser for `include` command
