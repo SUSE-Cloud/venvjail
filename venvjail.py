@@ -111,10 +111,37 @@ def _fix_virtualenv(dest_dir, relocated):
     # New path where the venv will live at the end
     virtual_env = os.path.join(relocated, dest_dir)
 
+    _fix_filesystem(dest_dir)
     _fix_alternatives(dest_dir, relocated)
     _fix_relocation(dest_dir, virtual_env)
     _fix_activators(dest_dir, virtual_env)
     _fix_systemd_services(dest_dir, virtual_env)
+
+
+def _fix_filesystem(dest_dir):
+    """Fix filesystem permissions."""
+
+    # When a directory is not owned by a package, cpio can create the
+    # directory with wrong permissions.  For SLE12 spio is not taking
+    # care of the global mask (022), and create the directory with
+    # 700.
+    dirs = {
+        'etc': 0o755,
+        'etc/cron.daily': 0o755,
+        'etc/logrotate.d': 0o755,
+        'etc/modprobe.d': 0o755,
+        'etc/sudoers.d': 0o750,
+        'srv': 0o755,
+        'srv/www': 0o755,
+        'var': 0o755,
+        'var/cache': 0o755,
+        'var/lib': 0o755,
+        'var/log': 0o755,
+    }
+    for dir_, mod_ in dirs.items():
+        dir_ = os.path.join(dest_dir, dir_)
+        if os.path.isdir(dir_):
+            os.chmod(dir_, mod_)
 
 
 def _fix_alternatives(dest_dir, relocated):
