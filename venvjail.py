@@ -295,6 +295,8 @@ def create(args):
     options = []
     if args.system_site_packages:
         options.append('--system-site-packages')
+    # Make sure that we generate a Python 2.7 environment
+    options.append('--python=python2.7')
     options = ' '.join(options)
     subprocess.call('virtualenv %s %s' % (options, args.dest_dir),
                     shell=True)
