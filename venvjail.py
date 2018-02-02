@@ -133,6 +133,8 @@ def _fix_filesystem(dest_dir):
         'etc/sudoers.d': 0o750,
         'srv': 0o755,
         'srv/www': 0o755,
+        'usr': 0o755,
+        'usr/share': 0o755,
         'var': 0o755,
         'var/cache': 0o755,
         'var/lib': 0o755,
