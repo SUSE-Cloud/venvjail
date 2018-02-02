@@ -419,7 +419,6 @@ def _repository(args):
                                            args.arch)
     output = subprocess.check_output(
         'osc --apiurl %s api %s' % (args.apiurl, api), shell=True)
-    root = ET.fromstring(output)
     elements = _filter_binary_xml(ET.fromstring(output))
     # Unversioned name, so we remove the file extension
     elements = [rpm.replace('.rpm', '') for rpm in elements]
