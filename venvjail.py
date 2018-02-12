@@ -278,8 +278,8 @@ def _pip_freeze(dest_dir):
 
 
 def add_meta_inf(dest_dir, version, ardana_version):
-    """Add META_INF directory content."""
-    meta_inf = os.path.join(dest_dir, 'META_INF')
+    """Add META-INF directory content."""
+    meta_inf = os.path.join(dest_dir, 'META-INF')
     os.mkdir(meta_inf)
 
     service, timestamp = os.path.basename(dest_dir).rsplit('-', 1)
