@@ -19,6 +19,7 @@
 
 import argparse
 import glob
+import itertools
 import os
 import os.path
 import re
@@ -26,7 +27,7 @@ import subprocess
 import xml.etree.ElementTree as ET
 
 
-# Sane default for excludeirpm file
+# Sane default for exclude-rpm file
 EXCLUDE_RPM = r"""# List of packages to ignore (use Python regex)
 
 # Note that `exclude` takes precedence over `include`.  So if a
@@ -54,7 +55,7 @@ python3.*
 rpmlint.*
 """
 
-LICENSE = """# Copyright (c) 2017 SUSE LINUX GmbH, Nuernberg, Germany.
+LICENSE = """# Copyright (c) 2018 SUSE LINUX GmbH, Nuernberg, Germany.
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -113,6 +114,7 @@ def _fix_virtualenv(dest_dir, relocated):
 
     _fix_filesystem(dest_dir)
     _fix_alternatives(dest_dir, relocated)
+    _fix_broken_links(dest_dir, directories=['srv'])
     _fix_relocation(dest_dir, virtual_env)
     _fix_activators(dest_dir, virtual_env)
     _fix_systemd_services(dest_dir, virtual_env)
@@ -164,6 +166,31 @@ def _fix_alternatives(dest_dir, relocated):
                     os.symlink(alt_name, rel_name)
                 else:
                     print('ERROR: alternative link for %s not found' % name)
+
+
+def _fix_broken_links(dest_dir, directories=None):
+    """Fix broken links."""
+    # Some packages create absolute soft-links.  We can use some
+    # heuristics to detect them, and if is possible, fix them.
+    for fix_dir in directories:
+        fix_dir = os.path.join(dest_dir, fix_dir)
+        for dirpath, dirnames, filenames in os.walk(fix_dir):
+            for name in itertools.chain(dirnames, filenames):
+                rel_name = os.path.join(dirpath, name)
+                if (os.path.islink(rel_name)
+                    and os.readlink(rel_name).startswith('/')):
+                    link_to = os.path.join(dest_dir,
+                                           os.readlink(rel_name)[1:])
+                    if os.path.exists(link_to):
+                        # Convert the absolute link into a relative
+                        # link, also takes care of removing the
+                        # initial '/' from the path
+                        rel_link = os.path.relpath(
+                            link_to, os.path.dirname(rel_name))
+                        os.unlink(rel_name)
+                        os.symlink(rel_link, rel_name)
+                    else:
+                        print('ERROR: alternative link for %s not found' % name)
 
 
 def _fix_relocation(dest_dir, virtual_env):
