@@ -148,6 +148,15 @@ def _fix_filesystem(dest_dir):
         'var/lib': 0o755,
         'var/log': 0o755,
     }
+
+    # Since OBS do not (if is not white-listed) run as root, all the
+    # cpio output will be create file with the same owner (the OBS
+    # user).  This create bugs like bsc#1083826, when a directory can
+    # only be accessed by the owner or the group but not for others.
+    dirs.update({
+        'usr/share/keystone': 0o755,
+    })
+
     for dir_, mod_ in dirs.items():
         dir_ = os.path.join(dest_dir, dir_)
         if os.path.isdir(dir_):
