@@ -18,6 +18,7 @@
 # and Python RPMs.  Used to jail OpenStack services.
 
 import argparse
+import fnmatch
 import glob
 import itertools
 import os
@@ -107,7 +108,7 @@ def _insert(filename, after, line):
     open(filename, 'w').writelines(lines)
 
 
-def _fix_virtualenv(dest_dir, relocated):
+def _fix_virtualenv(dest_dir, relocated, no_relocate_shebang):
     """Fix virtualenv activators."""
     # New path where the venv will live at the end
     virtual_env = os.path.join(relocated, dest_dir)
@@ -115,7 +116,7 @@ def _fix_virtualenv(dest_dir, relocated):
     _fix_filesystem(dest_dir)
     _fix_alternatives(dest_dir, relocated)
     _fix_broken_links(dest_dir, directories=['srv'])
-    _fix_relocation(dest_dir, virtual_env)
+    _fix_relocation(dest_dir, virtual_env, no_relocate_shebang)
     _fix_activators(dest_dir, virtual_env)
     _fix_systemd_services(dest_dir, virtual_env)
 
@@ -208,12 +209,15 @@ def _fix_broken_links(dest_dir, directories=None):
                         print('ERROR: alternative link for %s not found' % name)
 
 
-def _fix_relocation(dest_dir, virtual_env):
+def _fix_relocation(dest_dir, virtual_env, no_relocate_shebang):
     """Fix relocation shebang from python scripts"""
     shebang = '#!' + os.path.join(virtual_env, 'bin', 'python2')
     for dirpath, dirnames, filenames in os.walk(dest_dir):
         for name in filenames:
             rel_name = os.path.join(dirpath, name)
+            if any(fnmatch.fnmatch(rel_name, path)
+                    for path in no_relocate_shebang):
+                continue
             if os.path.isfile(rel_name):
                 try:
                     line = open(rel_name).readline().strip()
@@ -407,7 +411,7 @@ def create(args):
 
     add_meta_inf(args.dest_dir, args.version, args.ardana_version)
 
-    _fix_virtualenv(args.dest_dir, args.relocate)
+    _fix_virtualenv(args.dest_dir, args.relocate, args.no_relocate_shebang_list)
 
     # Write the log file, useful to better taylor the inclusion /
     # exclusion of packages.
@@ -552,6 +556,11 @@ if __name__ == '__main__':
     subparser.add_argument('-l', '--relocate',
                            default='/opt/stack/venv',
                            help='Relocated virtual environment directory')
+    subparser.add_argument('--no-relocate-shebang-list', metavar='PATH',
+                           nargs='+',
+                           help='Do not change the shebang in these files. '
+                               'Wildcards supported (fnmatch/bash style). '
+                               'Specify with DEST_DIR.')
     subparser.add_argument('-r', '--repo',
                            default='/.build.binaries',
                            help='Repository directory')
