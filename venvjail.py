@@ -557,6 +557,7 @@ if __name__ == '__main__':
                            default='/opt/stack/venv',
                            help='Relocated virtual environment directory')
     subparser.add_argument('--no-relocate-shebang-list', metavar='PATH',
+                           default=[],
                            nargs='+',
                            help='Do not change the shebang in these files. '
                                'Wildcards supported (fnmatch/bash style). '
